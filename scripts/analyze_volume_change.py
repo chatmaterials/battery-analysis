@@ -16,6 +16,12 @@ def analyze(initial: Path, final: Path) -> dict[str, object]:
         raise SystemExit("Initial and final structures must use the same backend for direct comparison")
     inserted_species, delta = infer_ion_change(initial, final)
     change = (vol_b - vol_a) / vol_a * 100.0
+    if abs(change) < 5.0:
+        breathing_class = "small-breathing"
+    elif abs(change) < 15.0:
+        breathing_class = "moderate-breathing"
+    else:
+        breathing_class = "severe-breathing"
     return {
         "backend": backend_a,
         "initial": str(initial),
@@ -26,6 +32,7 @@ def analyze(initial: Path, final: Path) -> dict[str, object]:
         "inserted_species": inserted_species,
         "delta_ion": delta,
         "volume_change_per_inserted_ion_A3": (vol_b - vol_a) / delta if delta > 0 else None,
+        "breathing_class": breathing_class,
         "observations": ["Volume change estimated from the lattice vectors in the two structures."],
     }
 

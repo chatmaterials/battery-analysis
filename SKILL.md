@@ -1,6 +1,6 @@
 ---
 name: "battery-analysis"
-description: "Use when the task is to analyze battery-relevant quantities from DFT results, including average insertion voltage, automatic inserted-ion counting, host-to-lithiated volume change, migration barriers from NEB images, candidate ranking, and compact markdown reports from finished calculations. Supports VASP, QE, and ABINIT-style host and lithiated inputs."
+description: "Use when the task is to analyze battery-relevant quantities from DFT results, including average insertion voltage, automatic inserted-ion counting, host-to-lithiated volume change, migration barriers from NEB images, specific-energy and breathing descriptors, candidate ranking, and compact markdown reports from finished calculations. Supports VASP, QE, and ABINIT-style host and lithiated inputs."
 ---
 
 # Battery Analysis
@@ -13,6 +13,7 @@ Use this skill for battery-material post-processing rather than generic workflow
 - infer the inserted ion and inserted-ion count from host and lithiated structures
 - quantify structural or volume change upon insertion or extraction
 - summarize migration barriers from NEB image sets
+- derive compact energy-density and breathing descriptors for battery screening
 - rank multiple battery candidates with a compact voltage-plus-volume-plus-barrier heuristic
 - write a compact battery-analysis report from existing calculations
 

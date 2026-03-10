@@ -35,7 +35,9 @@ def analyze_case(
         voltage_penalty = 0.0
     expansion_penalty = max(0.0, abs(float(volume["relative_volume_change_percent"])) - max_expansion_percent) / 10.0
     barrier_penalty = max(0.0, float(neb_payload["forward_barrier_eV"]) - max_barrier_eV) if neb_payload is not None else 0.25
-    score = voltage_penalty + expansion_penalty + barrier_penalty
+    specific_energy = float(voltage["specific_energy_Wh_kg"]) if voltage["specific_energy_Wh_kg"] is not None else 0.0
+    energy_density_penalty = max(0.0, 250.0 - specific_energy) / 100.0
+    score = voltage_penalty + expansion_penalty + barrier_penalty + energy_density_penalty
     return {
         "case": root.name,
         "path": str(root),
@@ -43,11 +45,16 @@ def analyze_case(
         "inserted_species": voltage["inserted_species"],
         "average_voltage_V": voltage["average_voltage_V"],
         "theoretical_capacity_mAh_g": voltage["theoretical_capacity_mAh_g"],
+        "specific_energy_Wh_kg": voltage["specific_energy_Wh_kg"],
+        "voltage_class": voltage["voltage_class"],
         "relative_volume_change_percent": volume["relative_volume_change_percent"],
+        "breathing_class": volume["breathing_class"],
         "forward_barrier_eV": neb_payload["forward_barrier_eV"] if neb_payload is not None else None,
+        "kinetic_class": neb_payload["kinetic_class"] if neb_payload is not None else None,
         "voltage_penalty": voltage_penalty,
         "expansion_penalty": expansion_penalty,
         "barrier_penalty": barrier_penalty,
+        "energy_density_penalty": energy_density_penalty,
         "screening_score": score,
     }
 
@@ -70,7 +77,7 @@ def analyze_cases(
         "target_voltage_window_V": [voltage_min, voltage_max],
         "max_expansion_percent": max_expansion_percent,
         "max_barrier_eV": max_barrier_eV,
-        "ranking_basis": "screening_score = voltage_penalty + expansion_penalty + barrier_penalty",
+        "ranking_basis": "screening_score = voltage_penalty + expansion_penalty + barrier_penalty + energy_density_penalty",
         "cases": ranked,
         "best_case": ranked[0]["case"] if ranked else None,
         "observations": [

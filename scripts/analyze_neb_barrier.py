@@ -9,6 +9,14 @@ from pathlib import Path
 from battery_io import read_energy
 
 
+def kinetic_class(barrier: float) -> str:
+    if barrier <= 0.5:
+        return "fast-like"
+    if barrier <= 1.0:
+        return "moderate-like"
+    return "slow-like"
+
+
 def analyze(root: Path) -> dict[str, object]:
     image_dirs = sorted(path for path in root.iterdir() if path.is_dir() and path.name.isdigit())
     if not image_dirs:
@@ -32,6 +40,7 @@ def analyze(root: Path) -> dict[str, object]:
         "reverse_barrier_eV": highest_rel - reaction_energy,
         "reaction_energy_eV": reaction_energy,
         "highest_image": highest["image"],
+        "kinetic_class": kinetic_class(highest_rel),
         "observations": ["Barrier and reaction energy estimated from image energies relative to the initial state."],
     }
 

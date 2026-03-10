@@ -31,6 +31,13 @@ def analyze(
     voltage = -(e_lithiated - e_host - delta * reference_energy) / delta
     host_mass = formula_mass(host_comp)
     capacity = FARADAY_MAH_PER_MOL * delta / host_mass if host_mass is not None and host_mass > 0.0 else None
+    specific_energy = voltage * capacity if capacity is not None else None
+    if voltage < 1.0:
+        voltage_class = "low-voltage"
+    elif voltage <= 3.5:
+        voltage_class = "working-window"
+    else:
+        voltage_class = "high-voltage"
     return {
         "backend": backend_host,
         "host": str(host),
@@ -43,6 +50,8 @@ def analyze(
         "average_voltage_V": voltage,
         "host_formula_mass_g_mol": host_mass,
         "theoretical_capacity_mAh_g": capacity,
+        "specific_energy_Wh_kg": specific_energy,
+        "voltage_class": voltage_class,
         "observations": ["Average insertion voltage estimated from total-energy differences."],
     }
 
