@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from battery_io import formula_mass, infer_ion_change, read_composition, read_energy
+from battery_io import density_from_formula_mass_and_volume, formula_mass, infer_ion_change, read_composition, read_energy, read_structure
 
 
 FARADAY_MAH_PER_MOL = 26801.0
@@ -32,6 +32,9 @@ def analyze(
     host_mass = formula_mass(host_comp)
     capacity = FARADAY_MAH_PER_MOL * delta / host_mass if host_mass is not None and host_mass > 0.0 else None
     specific_energy = voltage * capacity if capacity is not None else None
+    _, host_volume_A3 = read_structure(host)
+    density = density_from_formula_mass_and_volume(host_mass, host_volume_A3)
+    volumetric_energy = specific_energy * density if specific_energy is not None and density is not None else None
     if voltage < 1.0:
         voltage_class = "low-voltage"
     elif voltage <= 3.5:
@@ -49,8 +52,10 @@ def analyze(
         "delta_ion": delta,
         "average_voltage_V": voltage,
         "host_formula_mass_g_mol": host_mass,
+        "host_density_g_cm3": density,
         "theoretical_capacity_mAh_g": capacity,
         "specific_energy_Wh_kg": specific_energy,
+        "volumetric_energy_Wh_L": volumetric_energy,
         "voltage_class": voltage_class,
         "observations": ["Average insertion voltage estimated from total-energy differences."],
     }

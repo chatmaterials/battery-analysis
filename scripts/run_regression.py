@@ -33,6 +33,7 @@ def main() -> None:
     ensure(voltage["delta_ion"] == 1, "battery-analysis should infer the inserted ion count")
     ensure(voltage["theoretical_capacity_mAh_g"] is not None and voltage["theoretical_capacity_mAh_g"] > 0, "battery-analysis should estimate a theoretical capacity")
     ensure(voltage["specific_energy_Wh_kg"] is not None and voltage["specific_energy_Wh_kg"] > 300, "battery-analysis should estimate a specific-energy proxy")
+    ensure(voltage["volumetric_energy_Wh_L"] is not None and voltage["volumetric_energy_Wh_L"] > 300, "battery-analysis should estimate a volumetric-energy proxy")
     ensure(voltage["voltage_class"] == "working-window", "battery-analysis should classify the voltage scale")
     volume = run_json("scripts/analyze_volume_change.py", "fixtures/battery/host/POSCAR", "fixtures/battery/lithiated/POSCAR", "--json")
     ensure(volume["relative_volume_change_percent"] > 0, "battery-analysis should detect positive volume expansion")
@@ -69,9 +70,51 @@ def main() -> None:
         "10.0",
         "--max-barrier",
         "0.8",
+        "--mode",
+        "balanced",
         "--json",
     )
     ensure(ranked["best_case"] == "battery", "battery-analysis should rank the lower-strain, lower-barrier case ahead of the poor candidate")
+    stability_ranked = run_json(
+        "scripts/compare_battery_candidates.py",
+        "fixtures/battery",
+        "fixtures/candidates/high-strain",
+        "fixtures/candidates/low-voltage-safe",
+        "--reference-energy",
+        "-1.50",
+        "--voltage-min",
+        "0.5",
+        "--voltage-max",
+        "3.0",
+        "--max-expansion-percent",
+        "10.0",
+        "--max-barrier",
+        "0.8",
+        "--mode",
+        "stability",
+        "--json",
+    )
+    ensure(stability_ranked["best_case"] == "low-voltage-safe", "battery-analysis should rank the safer low-breathing candidate first in stability mode")
+    energy_ranked = run_json(
+        "scripts/compare_battery_candidates.py",
+        "fixtures/battery",
+        "fixtures/candidates/high-strain",
+        "fixtures/candidates/low-voltage-safe",
+        "--reference-energy",
+        "-1.50",
+        "--voltage-min",
+        "0.5",
+        "--voltage-max",
+        "3.0",
+        "--max-expansion-percent",
+        "10.0",
+        "--max-barrier",
+        "0.8",
+        "--mode",
+        "energy",
+        "--json",
+    )
+    ensure(energy_ranked["best_case"] == "high-strain", "battery-analysis should rank the high-energy candidate first in energy mode")
     temp_dir = Path(tempfile.mkdtemp(prefix="battery-analysis-report-"))
     try:
         report_path = Path(

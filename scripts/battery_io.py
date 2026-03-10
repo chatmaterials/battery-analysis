@@ -31,6 +31,7 @@ ATOMIC_WEIGHTS = {
     "F": 18.998,
     "C": 12.011,
 }
+AVOGADRO = 6.02214076e23
 
 
 def read_text(path: Path) -> str:
@@ -194,3 +195,11 @@ def formula_mass(composition: dict[str, int]) -> float | None:
             return None
         total += ATOMIC_WEIGHTS[label] * count
     return total
+
+
+def density_from_formula_mass_and_volume(formula_mass_g_mol: float | None, volume_A3: float | None) -> float | None:
+    if formula_mass_g_mol is None or volume_A3 is None or volume_A3 <= 0:
+        return None
+    cell_mass_g = formula_mass_g_mol / AVOGADRO
+    cell_volume_cm3 = volume_A3 * 1.0e-24
+    return cell_mass_g / cell_volume_cm3
