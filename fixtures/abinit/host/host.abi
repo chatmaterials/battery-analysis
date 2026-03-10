@@ -1,0 +1,20 @@
+ecut 20.0
+ngkpt 6 6 6
+nshiftk 1
+shiftk 0.0 0.0 0.0
+tolvrs 1.0d-10
+occopt 1
+pseudos "Fe.psp8, O.psp8"
+natom 3
+ntypat 2
+znucl 26 8
+typat 1 2 2
+acell 3*9.4486306
+rprim
+ 1.0 0.0 0.0
+ 0.0 1.0 0.0
+ 0.0 0.0 1.0
+xred
+ 0.0 0.0 0.0
+ 0.5 0.5 0.0
+ 0.5 0.0 0.5

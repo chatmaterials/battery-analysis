@@ -1,0 +1,5 @@
+interface:
+  display_name: "Battery Analysis"
+  short_description: "Analyze battery-relevant DFT result sets"
+  brand_color: "#14532D"
+  default_prompt: "Use $battery-analysis to analyze insertion voltage, volume change, or NEB barriers from battery-material calculations."
