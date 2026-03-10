@@ -1,5 +1,7 @@
 # battery-analysis
 
+[![CI](https://img.shields.io/github/actions/workflow/status/chatmaterials/battery-analysis/ci.yml?branch=main&label=CI)](https://github.com/chatmaterials/battery-analysis/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/chatmaterials/battery-analysis?display_name=tag)](https://github.com/chatmaterials/battery-analysis/releases)
+
 Standalone skill for battery-relevant DFT result analysis.
 
 Supports VASP, QE, and ABINIT-style host/lithiated inputs for voltage and volume analysis.
