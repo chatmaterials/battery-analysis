@@ -4,31 +4,29 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
 
-
-def read_energy(path: Path) -> float:
-    text = (path / "OUTCAR").read_text(errors="ignore")
-    matches = re.findall(r"TOTEN\s*=\s*([\-0-9.Ee+]+)", text)
-    if not matches:
-        raise SystemExit(f"No TOTEN found in {path / 'OUTCAR'}")
-    return float(matches[-1])
+from battery_io import read_energy
 
 
 def analyze(root: Path) -> dict[str, object]:
     image_dirs = sorted(path for path in root.iterdir() if path.is_dir() and path.name.isdigit())
     if not image_dirs:
         raise SystemExit("No numbered image directories were found")
-    images = [{"image": path.name, "energy_eV": read_energy(path)} for path in image_dirs]
+    images = []
+    for path in image_dirs:
+        backend, energy = read_energy(path)
+        images.append({"image": path.name, "backend": backend, "energy_eV": energy})
     reference = images[0]["energy_eV"]
     for image in images:
         image["relative_energy_eV"] = image["energy_eV"] - reference
     highest_rel = max(image["relative_energy_eV"] for image in images)
     reaction_energy = images[-1]["relative_energy_eV"]
     highest = max(images, key=lambda item: item["relative_energy_eV"])
+    backends = sorted({image["backend"] for image in images})
     return {
         "path": str(root),
+        "backends": backends,
         "images": images,
         "forward_barrier_eV": highest_rel,
         "reverse_barrier_eV": highest_rel - reaction_energy,

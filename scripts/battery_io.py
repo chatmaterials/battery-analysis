@@ -9,6 +9,28 @@ from pathlib import Path
 RY_TO_EV = 13.605693009
 HARTREE_TO_EV = 27.211386018
 BOHR_TO_ANG = 0.529177210903
+ATOMIC_WEIGHTS = {
+    "Li": 6.94,
+    "Na": 22.99,
+    "K": 39.098,
+    "Mg": 24.305,
+    "Ca": 40.078,
+    "Al": 26.982,
+    "Ti": 47.867,
+    "V": 50.942,
+    "Mn": 54.938,
+    "Fe": 55.845,
+    "Co": 58.933,
+    "Ni": 58.693,
+    "Cu": 63.546,
+    "Zn": 65.38,
+    "Si": 28.085,
+    "P": 30.974,
+    "S": 32.06,
+    "O": 15.999,
+    "F": 18.998,
+    "C": 12.011,
+}
 
 
 def read_text(path: Path) -> str:
@@ -100,3 +122,75 @@ def read_structure(path: Path) -> tuple[str, float]:
     raw = [line.split()[:3] for line in rprim_match.group(1).splitlines() if line.split()]
     lattice = [[float(x) * scale for x in row] for row in raw[:3]]
     return backend, volume(lattice)
+
+
+def read_composition(path: Path) -> tuple[str, dict[str, int]]:
+    backend = detect_backend(path)
+    root = path if path.is_dir() else path.parent
+    if backend == "vasp":
+        poscar = root / "POSCAR" if root.is_dir() else path
+        lines = read_text(poscar).splitlines()
+        species = lines[5].split()
+        counts = [int(x) for x in lines[6].split()]
+        return backend, dict(zip(species, counts, strict=False))
+    if backend == "qe":
+        in_files = sorted(root.glob("*.in"))
+        if not in_files:
+            raise SystemExit(f"No QE input file found in {root}")
+        species = []
+        counts: dict[str, int] = {}
+        lines = read_text(in_files[0]).splitlines()
+        for idx, line in enumerate(lines):
+            upper = line.strip().upper()
+            if upper.startswith("ATOMIC_SPECIES"):
+                j = idx + 1
+                while j < len(lines) and lines[j].strip():
+                    species.append(lines[j].split()[0])
+                    j += 1
+            if upper.startswith("ATOMIC_POSITIONS"):
+                j = idx + 1
+                while j < len(lines) and lines[j].strip():
+                    label = lines[j].split()[0]
+                    counts[label] = counts.get(label, 0) + 1
+                    j += 1
+                break
+        return backend, {label: counts.get(label, 0) for label in species}
+    abi_files = sorted(root.glob("*.abi"))
+    if not abi_files:
+        raise SystemExit(f"No ABINIT input file found in {root}")
+    text = read_text(abi_files[0])
+    znucl_match = re.search(r"^\s*znucl\s+(.+)$", text, re.MULTILINE)
+    typat_match = re.search(r"^\s*typat\s+(.+)$", text, re.MULTILINE)
+    if not znucl_match or not typat_match:
+        raise SystemExit(f"Could not parse znucl/typat in {abi_files[0]}")
+    z_values = [int(float(x)) for x in znucl_match.group(1).split()]
+    symbol_map = {3: "Li", 8: "O", 11: "Na", 12: "Mg", 15: "P", 22: "Ti", 23: "V", 25: "Mn", 26: "Fe", 27: "Co", 28: "Ni"}
+    species = [symbol_map.get(z, str(z)) for z in z_values]
+    typats = [int(x) for x in typat_match.group(1).split()]
+    counts = {species[idx - 1]: sum(1 for value in typats if value == idx) for idx in range(1, len(species) + 1)}
+    return backend, counts
+
+
+def infer_ion_change(host: Path, lithiated: Path, ion: str | None = None) -> tuple[str | None, int]:
+    _, host_comp = read_composition(host)
+    _, lith_comp = read_composition(lithiated)
+    positive = {}
+    for label in sorted(set(host_comp) | set(lith_comp)):
+        delta = lith_comp.get(label, 0) - host_comp.get(label, 0)
+        if delta > 0:
+            positive[label] = delta
+    if ion is not None:
+        return ion, positive.get(ion, 0)
+    if len(positive) == 1:
+        label, delta = next(iter(positive.items()))
+        return label, delta
+    return None, 0
+
+
+def formula_mass(composition: dict[str, int]) -> float | None:
+    total = 0.0
+    for label, count in composition.items():
+        if label not in ATOMIC_WEIGHTS:
+            return None
+        total += ATOMIC_WEIGHTS[label] * count
+    return total

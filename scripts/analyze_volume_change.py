@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from battery_io import read_structure
+from battery_io import infer_ion_change, read_structure
 
 
 def analyze(initial: Path, final: Path) -> dict[str, object]:
@@ -14,13 +14,18 @@ def analyze(initial: Path, final: Path) -> dict[str, object]:
     backend_b, vol_b = read_structure(final)
     if backend_a != backend_b:
         raise SystemExit("Initial and final structures must use the same backend for direct comparison")
+    inserted_species, delta = infer_ion_change(initial, final)
+    change = (vol_b - vol_a) / vol_a * 100.0
     return {
         "backend": backend_a,
         "initial": str(initial),
         "final": str(final),
         "volume_initial_A3": vol_a,
         "volume_final_A3": vol_b,
-        "relative_volume_change_percent": (vol_b - vol_a) / vol_a * 100.0,
+        "relative_volume_change_percent": change,
+        "inserted_species": inserted_species,
+        "delta_ion": delta,
+        "volume_change_per_inserted_ion_A3": (vol_b - vol_a) / delta if delta > 0 else None,
         "observations": ["Volume change estimated from the lattice vectors in the two structures."],
     }
 
